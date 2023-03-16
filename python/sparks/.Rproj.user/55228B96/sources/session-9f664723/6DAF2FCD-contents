@@ -1,0 +1,127 @@
+setwd("C:/Users/HP/Documents/vickyanal")
+rm(list=ls()) #Removes all items in Environment!
+library(urca)
+library(ggplot2)
+library(RCurl)
+library(readr)
+library(tseries) # for ADF unit root tests
+library(dynlm)
+library(nlWaldTest) # for the `nlWaldtest()` function
+library(lmtest) #for `coeftest()` and `bptest()`.
+library(broom) #for `glance(`) and `tidy()`
+#library(PoEdata) #for PoE4 datasets
+library(car) #for `hccm()` robust standard errors
+library(sandwich)
+library(knitr) #for kable()
+library(forecast)
+## read in data
+df <- read.csv("cleandf.csv")
+View(df)
+df.ts <- ts(df,frequency=15)
+View(df.ts)
+Dgdp <- diff(df.ts[,"gdp"])
+Dagroind <- diff(df.ts[,"agroind"])
+Dagrc <- diff(df.ts[,"agrc"])
+
+#colnames(df.ts)
+
+ddf <- ts.union(year=df.ts[,1],
+                cp= df.ts[,2],  
+                lst = df.ts[,3], 
+                frt = df.ts[,4],
+                fsh = df.ts[,5], 
+                fbt = df.ts[,6], 
+                taf = df.ts[,7],
+                wwp = df.ts[,8],
+                ppp = df.ts[,9],
+                cpp = df.ts[,10],
+                nmp = df.ts[,11],
+                prp = df.ts[,12],
+                agrc = df.ts[,13], 
+                agroind = df.ts[,14],
+                gdp=df.ts[,15], # package tseries
+                Dgdp,Dagroind,Dagrc, dframe=TRUE)
+View(ddf)
+#### Plot os the data
+plot(ddf$gdp, main="Unstationary GDP")
+plot(ddf$Dgdp, main= "Stationary GDP")
+plot(ddf$agrc, main = "Unstationary Agricultural production")
+plot(ddf$Dagrc, main="Stationary Agricultural production")
+plot(ddf$agroind, main= "Unstationary Agro-industries")
+plot(ddf$Dagroind, main="Stationary Agro-industries")
+
+##UNIT ROOT TEST USING ADF
+plot(ddf$gdp)
+Acf(ddf$gdp)  ## suggest we include 6 lags
+
+plot(ddf$agrc)
+Acf(ddf$agrc)  ## suggest we include 6 lags
+
+plot(ddf$agroind)
+Acf(ddf$agroind) ## suggest we incude 5 lags
+
+### CHECK THE ORDER ON INTERGRATION
+ndiffs(ddf$gdp)  ### Order of integration is 2
+ndiffs(ddf$agrc)
+ndiffs(ddf$agroind)
+
+##unit root test for gdp
+adf.test(ddf$gdp, k=2)
+
+#unit root test for agroind
+adf.test(ddf$agroind, k=2)
+
+#unit root test for agrc
+adf.test(ddf$agrc, k=2)
+## RESULT: The result of the test is a  p
+#-value greater than our chosen significance level of 0.05; therefore, we cannot reject the null hypothesis of nonstationarity.
+
+###AR(1) aUTOCORRELATION TEST
+gdpadf <- dynlm(d(ddf$gdp)~L(ddf$gdp)+L(d(ddf$gdp)))
+tidy(gdpadf)
+
+agrcadf <- dynlm(d(ddf$agrc)~L(ddf$agrc)+L(d(ddf$agrc)))
+tidy(agrcadf)
+
+agroindadf <- dynlm(d(ddf$agroind)~L(ddf$agroind)+L(d(ddf$agroind)))
+tidy(agroindadf)
+
+
+##### COINTEGRATION
+#Two series are cointegrated when their trends are not too far 
+#apart and are in some sense similar. This vague statement, 
+#though, can be made precise by conducting a cointegration test, 
+#which tests whether the residuals from regressing one series on 
+#the other one are stationary. If they are, the series are 
+#cointegrated. Thus, a cointegration test is in fact a 
+#Dickey-Fuler stationarity test on residuals, and its null 
+#hypothesis is of noncointegration. In other words, we would 
+#like to reject the null hypothesis in a cointegration test, 
+#as we wanted in a stationarity test.
+
+### cOINTEGRATION BTE GDP AND AGRC
+gdp_agrc <- dynlm(ddf$gdp~ddf$agrc)
+ehat.gdp_agrc <- resid(gdp_agrc)
+ndiffs(ehat.gdp_agrc) #### A series is I(0), that is, integrated of order  0
+#if it is already stationary (it is stationary in levels, not in differences)
+
+output1 <- dynlm(d(ehat.gdp_agrc)~L(ehat.gdp_agrc)+L(d(ehat.gdp_agrc))-1) #no constant
+foo1 <- tidy(output1)
+foo1
+
+### cOINTEGRATION BTE GDP AND AGROIND
+gdp_agroind <- dynlm(ddf$gdp~ddf$agroind)
+ehat.gdp_agroind <- resid(gdp_agroind)
+ndiffs(ehat.gdp_agroind) #### a series is I(1) if it is nonstationary in levels, but stationary in its first differences.
+
+output2 <- dynlm(d(ehat.gdp_agroind)~L(ehat.gdp_agroind)+L(d(ehat.gdp_agroind))-1) #no constant
+foo2 <- tidy(output2)
+foo2
+
+#cointegration of gdp and agric
+gdpagr <- as.matrix(cbind(ddf$gdp,ddf$agrc), demean=FALSE)
+po.test(gdpagr)
+
+#cointegration of gdp and agrioind
+gdpagrind <- as.matrix(cbind(ddf$gdp,ddf$agroind), demean=FALSE)
+po.test(gdpagrind)

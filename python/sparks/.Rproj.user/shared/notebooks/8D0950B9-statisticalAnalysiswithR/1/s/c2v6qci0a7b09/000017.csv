@@ -1,0 +1,2 @@
+"0","pie( table(df$Continent_Name), main = ""Continent name"")"
+"0",""

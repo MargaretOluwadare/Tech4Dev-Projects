@@ -1,0 +1,27 @@
+{
+    "id": "6DAF2FCD",
+    "path": "~/vickyanal/unitroot.R",
+    "project_path": null,
+    "type": "r_source",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1674645859313.0,
+    "source_on_save": false,
+    "relative_order": 1,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "11,0",
+        "scrollLine": "2",
+        "notebook_format": "word_document"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1674676238,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1674676238981,
+    "read_only": false,
+    "read_only_alternatives": []
+}
